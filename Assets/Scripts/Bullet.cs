@@ -1,5 +1,6 @@
 ﻿using System;
 using UnityEngine;
+using UnityEngine.AI;
 
 public class Bullet : MonoBehaviour
 {
@@ -44,6 +45,10 @@ public class Bullet : MonoBehaviour
                 {
                     ShootEnemy(hit.transform, enemy);
                 }
+            }
+            foreach (var point in GameObject.FindGameObjectsWithTag("Zombie"))
+            {
+                point.GetComponent<NavMeshAgent>().speed = 5;
             }
 
             // Hancurkan peluru saat tabrak

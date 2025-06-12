@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using TMPro;
+using UnityEngine.AI;
 
 public class ShootingMouse : MonoBehaviour
 {
@@ -18,7 +19,9 @@ public class ShootingMouse : MonoBehaviour
     private float scrollInput = 0f;
     private bool isShooting = false;
     private bool wasScopeOn;
-    
+
+    public SimpleFSM fsm;
+
     private bool isReloading = false;
     private const int magazineSize = 1;
     private int currentAmmo = magazineSize;
@@ -75,6 +78,11 @@ public class ShootingMouse : MonoBehaviour
     {
         if (isShooting)
         {
+            foreach (var point in GameObject.FindGameObjectsWithTag("Zombie"))
+            {
+                point.GetComponent<NavMeshAgent>().speed = 0;
+            }
+            fsm.curspeed = 0;
             currentAmmo--;
             AudioManager.Instance.PlayShootingSound();
             AudioManager.Instance.PlayTrailSound();

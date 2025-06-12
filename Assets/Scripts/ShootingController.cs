@@ -1,6 +1,7 @@
 using UnityEngine;
 using TMPro;
 using System.Collections;
+using UnityEngine.AI;
 
 public class ShootController : MonoBehaviour
 {
@@ -115,6 +116,10 @@ public class ShootController : MonoBehaviour
 
     void Shoot()
     {
+        foreach (var point in GameObject.FindGameObjectsWithTag("Zombie"))
+        {
+            point.GetComponent<NavMeshAgent>().speed = 0;
+        }
         Vector2 crosshairPos = crosshairController.GetCrosshairPosition();
         Ray ray = cam.ScreenPointToRay(crosshairPos);
 

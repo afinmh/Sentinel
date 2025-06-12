@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.AI;
 
 [RequireComponent(typeof(EnemyAnimationController))]
 [RequireComponent(typeof(RagdollController))]
@@ -85,8 +86,10 @@ public class EnemyController : MonoBehaviour
         }
 
         AudioManager.Instance.PlayHitSound();
+        GetComponent<SimpleFSM>().enabled = false;
+        Destroy(gameObject, 5);
 
-    // Panggil GameManager
+        // Panggil GameManager
         if (gameManager != null)
         {
             gameManager.OnZombieKilled();
