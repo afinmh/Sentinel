@@ -21,10 +21,10 @@ public class SerialReaderThreaded : MonoBehaviour
 
         try
         {
-            serial.Open();
-            running = true;
-            thread = new Thread(ReadSerial);
-            thread.Start();
+            //serial.Open();
+            //running = true;
+            //thread = new Thread(ReadSerial);
+            //thread.Start();
         }
         catch
         {
