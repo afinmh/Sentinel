@@ -55,10 +55,10 @@ public class BulletTimeController : MonoBehaviour
 		Debug.Log($"[BulletTime] Setups in range: {setupsInRange.Length}");
 
 		var selectedTrackingSetup = SelectTrackingSetup(activeBullet.transform, setupsInRange, activeBullet.transform.rotation);
-		if (selectedTrackingSetup == null)
+		if (selectedTrackingSetup == null && enemyTrackingSetup.Length > 0)
 		{
-			Debug.LogWarning("[BulletTime] No tracking setup selected — camera won't activate.");
-			return;
+			Debug.LogWarning("[BulletTime] No clear track found, using first available enemy tracking setup as fallback.");
+			selectedTrackingSetup = enemyTrackingSetup[0];
 		}
 		this.activeBullet = activeBullet;
 		this.targetPosition = targetPosition;
@@ -140,27 +140,41 @@ public class BulletTimeController : MonoBehaviour
 		return Vector3.Distance(activeBullet.transform.position, targetPosition) < distanceToChangeCamera;
 	}
 
-	private void ChangeCamera()
-	{
-		if (isLastCameraActive)
-			return;
-		isLastCameraActive = true;
-		DestroyCinemachineSetup();
-		Transform hitTransform = activeBullet.GetHitEnemyTransform();
-		if (hitTransform)
-		{
-			Quaternion rotation = Quaternion.Euler(Vector3.up * activeBullet.transform.rotation.eulerAngles.y);
-			var selectedTrackingSetup = SelectTrackingSetup(hitTransform, enemyTrackingSetup, rotation);
-			if (selectedTrackingSetup != null)
-			{
-				CreateEnemyPath(hitTransform, activeBullet.transform, selectedTrackingSetup.avaliableTrack);
-				CreateDolly(selectedTrackingSetup);
-				dollyInstance.InitDolly(trackInstance, hitTransform.transform);
-				timeScaleController.SlowDownTime();
-			}
-		}
-		StartCoroutine(FinishSequence());
-	}
+private void ChangeCamera()
+{
+    if (isLastCameraActive) return;
+    isLastCameraActive = true;
+
+    DestroyCinemachineSetup();
+
+    Transform hitTransform = activeBullet.GetHitEnemyTransform();
+    if (hitTransform == null)
+    {
+        Debug.LogWarning("[BulletTime] No enemy hit. Skipping enemy dolly camera.");
+    }
+    else
+    {
+        Debug.Log("[BulletTime] Enemy hit: " + hitTransform.name);
+        Quaternion rotation = Quaternion.Euler(Vector3.up * activeBullet.transform.rotation.eulerAngles.y);
+        var selectedTrackingSetup = SelectTrackingSetup(hitTransform, enemyTrackingSetup, rotation);
+
+        if (selectedTrackingSetup != null)
+        {
+            Debug.Log("[BulletTime] Creating enemy path and dolly for enemy: " + hitTransform.name);
+            CreateEnemyPath(hitTransform, activeBullet.transform, selectedTrackingSetup.avaliableTrack);
+            CreateDolly(selectedTrackingSetup);
+            dollyInstance.InitDolly(trackInstance, hitTransform.transform);
+            timeScaleController.SlowDownTime();
+        }
+        else
+        {
+            Debug.LogWarning("[BulletTime] No enemy tracking setup found for enemy hit.");
+        }
+    }
+
+    StartCoroutine(FinishSequence());
+}
+
 
 	private void DestroyCinemachineSetup()
 	{

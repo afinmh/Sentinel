@@ -1,13 +1,16 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
 using TMPro;
+using UnityEngine.SceneManagement; // ← Tambahkan ini di atas
 
 public class GameManager : MonoBehaviour
 {
     [Header("Zombie Settings")]
     [SerializeField] private int maxZombiesToActivate = 5;
     [SerializeField] private TextMeshProUGUI zombieCounterText;
-    [SerializeField] private TextMeshProUGUI gameOverText;
+
+    [Header("UI Elements")]
+    [SerializeField] private GameObject gameOverCanvas;
 
     [Header("Ammo Settings")]
     [SerializeField] public int maxAmmoReserve = 7;
@@ -21,19 +24,15 @@ public class GameManager : MonoBehaviour
     private void Awake()
     {
         Instance = this;
-
-        gameOverText.gameObject.SetActive(false);
+        gameOverCanvas.SetActive(false); // Nonaktifkan canvas game over saat mulai
     }
 
     void Start()
     {
-        // Ambil semua zombie di scene
         GameObject[] zombies = GameObject.FindGameObjectsWithTag("Zombie");
-
         allZombies.AddRange(zombies);
-        Shuffle(allZombies); // Acak zombie
+        Shuffle(allZombies);
 
-        // Aktifkan hanya sejumlah maxZombiesToActivate
         for (int i = 0; i < allZombies.Count; i++)
         {
             allZombies[i].SetActive(i < maxZombiesToActivate);
@@ -63,8 +62,7 @@ public class GameManager : MonoBehaviour
         if (zombiesLeft <= 0)
         {
             Debug.Log("Semua zombie telah dikalahkan!");
-            gameOverText.text = "Horee!!!";
-            gameOverText.gameObject.SetActive(true);
+            GameOver(true); // Menang
         }
 
         CheckGameOver();
@@ -77,7 +75,6 @@ public class GameManager : MonoBehaviour
         CheckGameOver();
     }
 
-
     private void UpdateZombieCounter()
     {
         if (zombieCounterText != null)
@@ -88,17 +85,22 @@ public class GameManager : MonoBehaviour
     {
         if (maxAmmoReserve <= 0 && zombiesLeft > 0)
         {
-            GameOver();
+            GameOver(false); // Kalah
         }
     }
 
-    private void GameOver()
+    private void GameOver(bool isWin)
     {
-        Debug.Log("Game Over! Out of ammo.");
-        gameOverText.text = "";
-        gameOverText.gameObject.SetActive(true);
+        Debug.Log(isWin ? "Menang!" : "Game Over! Out of ammo.");
+        gameOverCanvas.SetActive(true);
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
-        Time.timeScale = 0f; 
+        Time.timeScale = 0f;
+    }
+
+    public void RestartGame()
+    {
+        Time.timeScale = 1f; // Normalisasi waktu
+        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex); // Reload scene saat ini
     }
 }
