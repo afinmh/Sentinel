@@ -17,4 +17,15 @@ public class EnemyAnimationController : MonoBehaviour
     {
         animator.enabled = false;
     }
+
+    public void SetWalking(bool isWalking)
+    {
+        animator.SetBool("isWalking", isWalking); // Pastikan ada parameter "isWalking" di Animator
+    }
+
+        public void ForcePlayWalk()
+    {
+        // Langsung paksa ganti ke animasi Walk (nama state harus sesuai di Animator)
+        animator.Play("walk", 0, 0f); // Layer 0, time = 0 (dari awal)
+    }
 }

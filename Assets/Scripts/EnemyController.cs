@@ -19,12 +19,20 @@ public class EnemyController : MonoBehaviour
     private bool canPatrol = true;
     private GameManager gameManager;
 
-
     private void Awake()
     {
         animationController = GetComponent<EnemyAnimationController>();
         ragdollController = GetComponent<RagdollController>();
         gameManager = FindObjectOfType<GameManager>();
+    }
+
+    private void Start()
+    {
+        if (canPatrol && patrolPoints.Length > 0)
+        {
+            animationController.SetWalking(true);        // Set parameter animator
+            animationController.ForcePlayWalk();         // Paksa langsung ke state "Walk"
+        }
     }
 
     private void Update()
@@ -50,49 +58,47 @@ public class EnemyController : MonoBehaviour
         }
     }
 
-    public void StopPatrol()
-    {
-        canPatrol = false;
-    }
-
     private IEnumerator WaitBeforeNextPoint()
     {
         isWaiting = true;
+        animationController.SetWalking(false); // Set ke idle
         yield return new WaitForSeconds(waitTimeAtPoint);
         currentPatrolIndex = (currentPatrolIndex + 1) % patrolPoints.Length;
         isWaiting = false;
+        animationController.SetWalking(true); // Jalan lagi
+        animationController.ForcePlayWalk();  // Paksa langsung ke animasi jalan
+    }
+
+    public void StopPatrol()
+    {
+        canPatrol = false;
     }
 
     public void OnEnemyShot(Vector3 shootDirection, Rigidbody shotRB)
     {
         StopAnimation();
         StopPatrol();
-
         ragdollController.EnableRagdoll();
 
-        // Tambah gaya hanya ke titik yang terkena (lebih realistis)
         if (shotRB)
         {
-            shotRB.WakeUp(); // Ini penting!
-            shotRB.AddForce(shootDirection.normalized * 150f, ForceMode.Impulse); // Tambah force
+            shotRB.WakeUp();
+            shotRB.AddForce(shootDirection.normalized * 150f, ForceMode.Impulse);
         }
 
-        // Tambah gaya ringan ke semua rigidbody agar ragdoll bereaksi lebih natural
         foreach (Rigidbody rb in ragdollController.GetRigidbodies())
         {
             rb.WakeUp();
-            rb.AddForce(shootDirection * 30f, ForceMode.Impulse); // Nilai kecil agar tak berlebihan
+            rb.AddForce(shootDirection * 30f, ForceMode.Impulse);
         }
 
         AudioManager.Instance.PlayHitSound();
 
-    // Panggil GameManager
         if (gameManager != null)
         {
             gameManager.OnZombieKilled();
         }
     }
-
 
     public void StopAnimation()
     {

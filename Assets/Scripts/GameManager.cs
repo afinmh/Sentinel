@@ -27,20 +27,22 @@ public class GameManager : MonoBehaviour
         gameOverCanvas.SetActive(false); // Nonaktifkan canvas game over saat mulai
     }
 
-    void Start()
+void Start()
+{
+    GameObject[] zombies = GameObject.FindGameObjectsWithTag("Zombie");
+    allZombies.AddRange(zombies);
+    Shuffle(allZombies);
+
+    int activatedCount = Mathf.Min(maxZombiesToActivate, allZombies.Count);
+    for (int i = 0; i < allZombies.Count; i++)
     {
-        GameObject[] zombies = GameObject.FindGameObjectsWithTag("Zombie");
-        allZombies.AddRange(zombies);
-        Shuffle(allZombies);
-
-        for (int i = 0; i < allZombies.Count; i++)
-        {
-            allZombies[i].SetActive(i < maxZombiesToActivate);
-        }
-
-        zombiesLeft = maxZombiesToActivate;
-        UpdateZombieCounter();
+        allZombies[i].SetActive(i < activatedCount);
     }
+
+    zombiesLeft = activatedCount; // ← Ini penting!
+    UpdateZombieCounter();
+}
+
 
     private void Shuffle(List<GameObject> list)
     {
