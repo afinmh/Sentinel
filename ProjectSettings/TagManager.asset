@@ -6,11 +6,14 @@ TagManager:
   tags:
   - TeleportPoint
   - Zombie
+  - EasyZombie
+  - MediumZombie
+  - HardZombie
   layers:
   - Default
   - TransparentFX
   - Ignore Raycast
-  - 
+  - MainMenuCamera
   - Water
   - UI
   - 
@@ -23,9 +26,9 @@ TagManager:
   - Bullet Time Postprocessing
   - Default Postprocessing
   - TeleportPoint
-  - 
-  - 
-  - 
+  - EasyZombie
+  - MediumZombie
+  - HardZombie
   - 
   - 
   - 

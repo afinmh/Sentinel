@@ -72,8 +72,19 @@ public class ShootController : MonoBehaviour
         {
             if (currentAmmo > 0)
             {
-                Shoot();
+                bool wasLastBullet = (currentAmmo == 1 && GameManager.Instance.maxAmmoReserve == 0);
+                bool hitEnemy = Shoot();
                 currentAmmo--;
+                
+                // Jika peluru terakhir dan tidak kena musuh, langsung cek gameover
+                if (wasLastBullet && !hitEnemy)
+                {
+                    if (GetZombiesLeft() > 0)
+                    {
+                        GameManager.Instance.GameOver(false);
+                    }
+                }
+                
                 AudioManager.Instance.PlayShootingSound();
                 AudioManager.Instance.PlayTrailSound();
             }
@@ -93,19 +104,19 @@ public class ShootController : MonoBehaviour
     private IEnumerator Reload()
     {
         isReloading = true;
-        AudioManager.Instance.PlayReloadSound();
-
-        Debug.Log("Reloading...");
-        yield return new WaitForSeconds(reloadDuration);
-
         if (GameManager.Instance.maxAmmoReserve > 0)
         {
+            AudioManager.Instance.PlayReloadSound();
+            Debug.Log("Reloading...");
+            yield return new WaitForSeconds(reloadDuration);
             GameManager.Instance.UseOneAmmo(); 
             currentAmmo = magazineSize;
         }
         else
         {
+            AudioManager.Instance.PlayBulletEmpty();
             Debug.Log("No more ammo in reserve!");
+            yield return new WaitForSeconds(reloadDuration);
             currentAmmo = 0;
         }
 
@@ -113,38 +124,68 @@ public class ShootController : MonoBehaviour
         Debug.Log("Reloaded!");
     }
 
-    void Shoot()
+    bool Shoot()
     {
         Vector2 crosshairPos = crosshairController.GetCrosshairPosition();
         Ray ray = cam.ScreenPointToRay(crosshairPos);
+        bool hitEnemy = false;
 
-        if (Physics.Raycast(ray, out RaycastHit hit, maxDistance))
+        // Gunakan RaycastAll untuk mendapatkan semua objek yang terkena raycast
+        RaycastHit[] allHits = Physics.RaycastAll(ray, maxDistance);
+        System.Array.Sort(allHits, (hit1, hit2) => hit1.distance.CompareTo(hit2.distance));
+
+        RaycastHit primaryHit = new RaycastHit();
+        bool hasHit = false;
+        EnemyController targetEnemy = null;
+        
+        // Cari zombie/enemy terlebih dahulu dalam semua hits
+        foreach (RaycastHit hit in allHits)
         {
-            Debug.Log("Tembakan kena: " + hit.collider.name);
-
-            // Check for enemy controller first
             EnemyController controller = hit.collider.GetComponentInParent<EnemyController>();
+            Debug.Log($"[Shoot] Checking hit object: {hit.collider.name} - EnemyController found: {controller != null}");
             if (controller != null)
             {
-                controller.StopPatrol();
-                Vector3 direction = hit.point - bulletSpawnTransform.position;
+                targetEnemy = controller;
+                primaryHit = hit;
+                hasHit = true;
+                Debug.Log("Tembakan kena zombie: " + hit.collider.name + " (Enemy: " + controller.name + ")");
+                break;
+            }
+        }
+        
+        // Jika tidak ada zombie yang terkena, gunakan hit pertama (terdekat)
+        if (!hasHit && allHits.Length > 0)
+        {
+            primaryHit = allHits[0];
+            hasHit = true;
+            Debug.Log("Tembakan kena objek: " + primaryHit.collider.name);
+        }
+
+        if (hasHit)
+        {
+            // Jika ada enemy yang terkena
+            if (targetEnemy != null)
+            {
+                hitEnemy = true;
+                targetEnemy.StopPatrol();
+                Vector3 direction = primaryHit.point - bulletSpawnTransform.position;
 
                 if (direction.magnitude >= minDistanceToPlayAnimation)
                 {
-                    controller.StopAnimation();
+                    targetEnemy.StopAnimation();
                     Bullet bulletInstance = Instantiate(bulletPrefab, bulletSpawnTransform.position, bulletSpawnTransform.rotation);
-                    bulletInstance.Launch(shootingForce, hit.collider.transform, hit.point);
-                    bulletTimeController.StartSequence(bulletInstance, hit.point);
+                    bulletInstance.Launch(shootingForce, primaryHit.collider.transform, primaryHit.point);
+                    bulletTimeController.StartSequence(bulletInstance, primaryHit.point);
                 }
                 else
                 {
-                    controller.OnEnemyShot(direction, hit.collider.GetComponent<Rigidbody>());
+                    targetEnemy.OnEnemyShot(direction, primaryHit.collider.GetComponent<Rigidbody>());
                 }
             }
             // Check for ragdoll if no enemy controller found
             else
             {
-                RagdollController ragdoll = hit.collider.GetComponentInParent<RagdollController>();
+                RagdollController ragdoll = primaryHit.collider.GetComponentInParent<RagdollController>();
                 if (ragdoll != null && !ragdoll.IsRagdollEnabled)
                 {
                     ragdoll.EnableRagdoll();
@@ -152,7 +193,7 @@ public class ShootController : MonoBehaviour
 
                 // Spawn bullet with force for non-enemy hits
                 Bullet bulletInstance = Instantiate(bulletPrefab, bulletSpawnTransform.position, Quaternion.LookRotation(ray.direction));
-                bulletInstance.Launch(shootingForce, null, hit.point);
+                bulletInstance.Launch(shootingForce, null, primaryHit.point);
             }
         }
         else
@@ -162,5 +203,23 @@ public class ShootController : MonoBehaviour
             Bullet bulletInstance = Instantiate(bulletPrefab, bulletSpawnTransform.position, Quaternion.LookRotation(ray.direction));
             bulletInstance.Launch(shootingForce, null, bulletSpawnTransform.position + ray.direction * maxDistance);
         }
+        
+        return hitEnemy;
+    }
+
+    private int GetZombiesLeft()
+    {
+        // Ambil value dari GameManager
+        var field = typeof(GameManager)
+            .GetField("zombiesLeft", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+        int value = 0;
+        if (field != null)
+        {
+            object val = field.GetValue(GameManager.Instance);
+            if (val is int)
+                value = (int)val;
+        }
+        Debug.Log($"[ShootingController] zombiesLeft: {value}");
+        return value;
     }
 }

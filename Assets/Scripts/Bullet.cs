@@ -13,6 +13,10 @@ public class Bullet : MonoBehaviour
     private Vector3 hitPoint;
     private Vector3 lastPosition;
 
+    // Tambahan: event agar BulletTimeController bisa handle destroy
+    public event Action<Bullet, RaycastHit> OnBulletHit;
+    private bool isPendingDestroy = false;
+
     public void Launch(float shootingForce, Transform hitTransform, Vector3 hitPoint)
     {
         direction = (hitPoint - transform.position).normalized;
@@ -21,12 +25,16 @@ public class Bullet : MonoBehaviour
         this.shootingForce = shootingForce;
         this.hitPoint = hitPoint;
         lastPosition = transform.position;
+        isPendingDestroy = false;
     }
 
     private void Update()
     {
-        RaycastAndMove();
-        Rotate();
+        if (!isPendingDestroy)
+        {
+            RaycastAndMove();
+            Rotate();
+        }
     }
 
     private void RaycastAndMove()
@@ -46,8 +54,20 @@ public class Bullet : MonoBehaviour
                 }
             }
 
-            // Hancurkan peluru saat tabrak
-            Destroy(gameObject);
+            // Jangan langsung destroy, trigger event agar BulletTimeController yang handle
+            if (!isPendingDestroy)
+            {
+                isPendingDestroy = true;
+                if (OnBulletHit != null)
+                {
+                    OnBulletHit(this, hit);
+                }
+                else
+                {
+                    Debug.LogWarning("[Bullet] OnBulletHit event is null! Destroying bullet directly.");
+                    Destroy(gameObject);
+                }
+            }
             return;
         }
 
@@ -71,4 +91,11 @@ public class Bullet : MonoBehaviour
 
     public float GetBulletSpeed() => shootingForce;
     internal Transform GetHitEnemyTransform() => hitTransform;
+
+    // Dipanggil BulletTimeController jika memang harus destroy
+    public void ForceDestroy()
+    {
+        isPendingDestroy = true;
+        Destroy(gameObject);
+    }
 }
