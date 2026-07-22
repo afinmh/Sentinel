@@ -77,9 +77,14 @@ Ikuti langkah-langkah berikut untuk menjalankan Sentinel di komputer Anda:
 2. **Buka di Unity**: Buka proyek `Sentinel` melalui **Unity Hub**. Pastikan menggunakan versi Unity yang sesuai dengan proyek (Cek pengaturan *ProjectVersion.txt* atau jalankan versi Unity terbaru yang kompatibel dengan *package* Cinemachine).
 3. **Buka Scene**: Di dalam panel `Project`, navigasikan ke *folder* `Assets` (atau `Assets/Scenes` jika ada), dan buka *scene* utama game.
 4. **Konfigurasi Pengontrol Serial Fisik (Jika digunakan)**:
-    * Hubungkan mikrokontroler (contoh: Arduino/ESP32 dengan modul MPU6050) ke PC.
-    * Pastikan terdeteksi di `COM9`. Jika berbeda, buka *script* `SerialReaderThreaded.cs` dan ubah nilai `COM9` sesuai dengan *port* mikrokontroler Anda (misalnya `COM3`).
-    * Pastikan kode pada mikrokontroler menggunakan *Baud rate* sebesar `38400` dan mengirim format data `Roll,Pitch,Yaw,Shoot,Reload,Scope`.
+    * Program mikrokontroler (misalnya Arduino Uno/Nano) menggunakan *sketch* `programharrdware.ino` yang terdapat di dalam folder `programharrdware` pada repositori ini.
+    * Konfigurasi Pin Perangkat Keras (*Hardware*):
+        * **Sensor MPU6050 (IMU)**: Hubungkan SDA ke pin A4 (Arduino Uno) dan SCL ke pin A5.
+        * **Tombol Tembak (Shoot)**: Hubungkan ke Pin Digital 2 (Sistem *Active LOW* / Gunakan *Internal Pullup*).
+        * **Tombol Isi Peluru (Reload)**: Hubungkan ke Pin Digital 3 (*Active LOW*).
+        * **Tombol Bidik (Scope/Toggle)**: Hubungkan ke Pin Digital 4 (*Active LOW*).
+    * Setelah kode Arduino diunggah (dengan *Baud rate* `38400`), hubungkan mikrokontroler ke PC Anda.
+    * Pastikan perangkat terdeteksi di `COM9`. Jika terdeteksi di *port* lain (misalnya `COM3`), buka *script* `Assets/Scripts/SerialReaderThreaded.cs` dan ubah nilai `COM9` di dalam fungsi `Start()` agar sesuai dengan *port* Anda.
 5. **Konfigurasi Pengontrol WebSocket (Jika digunakan)**:
     * Pastikan Anda memiliki *server* Node.js yang berjalan secara lokal di *port* `3000`.
     * *Server* harus memancarkan (emit) *event* bernama `"message"` dan memberikan kembalian JSON dengan properti `yaw`, `pitch`, dan `roll`.
